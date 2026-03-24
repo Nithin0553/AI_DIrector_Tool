@@ -5,47 +5,39 @@ import torch
 class LocalLLM:
 
     def __init__(self):
-        model_name = "mistralai/Mistral-7B-Instruct-v0.2"
+        model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
 
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
-            torch_dtype=torch.float16,
-            device_map="auto"
+            device_map="auto",
+            torch_dtype=torch.float16
         )
 
     def analyze_scene(self, dialogue_units):
 
         combined_text = ""
-        for i, unit in enumerate(dialogue_units):
+        for i, unit in enumerate(dialogue_units[:10]):  # LIMIT for speed
             combined_text += f"{i+1}. {unit['speaker']}: {unit['dialogue']}\n"
 
         prompt = f"""
-    You are an expert film director AI.
-    
-    Analyze each dialogue and return a JSON list.
-    
-    Each item must contain:
-    - index
-    - emotion
-    - intent
-    - shot_type
-    - camera_angle
-    - camera_movement
-    - duration
-    
-    Dialogues:
-    {combined_text}
-    
-    Return ONLY JSON list.
-    """
+You are an expert film director AI.
+
+Analyze each dialogue and return JSON list with:
+emotion, intent, shot_type, camera_angle, camera_movement, duration
+
+Dialogues:
+{combined_text}
+
+Return ONLY JSON list.
+"""
 
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
 
         outputs = self.model.generate(
             **inputs,
-            max_new_tokens=500,
+            max_new_tokens=200,
             do_sample=False
         )
 
@@ -54,7 +46,6 @@ class LocalLLM:
         try:
             json_start = response.find("[")
             json_end = response.rfind("]") + 1
-            json_str = response[json_start:json_end]
-            return eval(json_str)
+            return eval(response[json_start:json_end])
         except:
             return []
