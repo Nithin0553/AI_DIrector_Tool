@@ -22,15 +22,37 @@ class LocalLLM:
             combined_text += f"{i+1}. {unit['speaker']}: {unit['dialogue']}\n"
 
         prompt = f"""
-You are an expert film director AI.
+You are a professional film director.
 
-Analyze each dialogue and return JSON list with:
-emotion, intent, shot_type, camera_angle, camera_movement, duration
+For EACH dialogue:
+- Detect emotion (happy, sad, anger, fear, neutral)
+- Detect intensity (0–1)
+- Detect intent (question, command, argument, etc.)
 
-Dialogues:
-{combined_text}
+Also decide:
+- shot_type:
+    closeup → strong emotion
+    medium → normal dialogue
+    wide → environment/action
 
-Return ONLY JSON list.
+- camera_angle:
+    low_angle → power
+    high_angle → weakness
+    eye_level → normal
+
+- camera_movement:
+    static → calm
+    slow_zoom → emotional
+    pan → conversation
+    handheld → tension
+
+- duration:
+    based on speaking speed + pauses + emotion
+
+VERY IMPORTANT:
+Return DIFFERENT values for different dialogues.
+
+Return JSON list.
 """
 
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
